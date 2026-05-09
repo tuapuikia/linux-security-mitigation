@@ -71,3 +71,6 @@ curl -fsSL https://raw.githubusercontent.com/tuapuikia/linux-security-mitigation
 
 ## Disclaimer
 This script is provided "as is" without warranty of any kind. Always review security scripts before running them with root privileges.
+
+---
+*Developed with ❤️ for Dad.*
