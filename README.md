@@ -36,7 +36,7 @@ A local privilege escalation vulnerability affecting IPsec (`esp4`, `esp6`) and 
 You can run the script directly from GitHub using `curl`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tuapuikia/linux-security-mitigation/main/linux-security-mitigation.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tuapuikia/linux-security-mitigation/refs/heads/main/linux-security-mitigation.sh | bash
 ```
 
 ### Local Execution
@@ -59,7 +59,7 @@ sudo ./linux-security-mitigation.sh --disable
 
 *Note: If you ran the script via `curl`, you can disable it using:*
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tuapuikia/linux-security-mitigation/main/linux-security-mitigation.sh | sudo bash -s -- --disable
+curl -fsSL https://raw.githubusercontent.com/tuapuikia/linux-security-mitigation/refs/heads/main/linux-security-mitigation.sh | bash -s -- --disable
 ```
 
 ---
