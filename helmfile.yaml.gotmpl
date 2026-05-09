@@ -1,0 +1,32 @@
+# helmfile.yaml.gotmpl
+# Example for deploying the Kernel LPE Mitigator
+
+repositories: []
+
+releases:
+  - name: kernel-lpe-mitigate
+    namespace: kube-system
+    chart: ./kernel-lpe-mitigator
+    
+    # Use 'installed: false' to completely remove the DaemonSet
+    installed: {{ env "MITIGATION_ENABLED" | default "true" }}
+
+    values:
+      - action: {{ env "MITIGATION_ACTION" | default "apply" }}
+        mitigation:
+          copyFail: {{ env "ENABLE_COPY_FAIL" | default "true" }}
+          dirtyFrag: {{ env "ENABLE_DIRTY_FRAG" | default "true" }}
+
+# --- Usage Examples (Commented Out) ---
+#
+# 1. Apply mitigations (Default):
+#    helmfile -f helmfile.yaml.gotmpl apply
+#
+# 2. Remove mitigations from nodes (Cleanup mode):
+#    MITIGATION_ACTION=remove helmfile -f helmfile.yaml.gotmpl apply
+#
+# 3. Disable Dirty-Frag mitigation only:
+#    ENABLE_DIRTY_FRAG=false helmfile -f helmfile.yaml.gotmpl apply
+#
+# 4. Completely uninstall the DaemonSet:
+#    MITIGATION_ENABLED=false helmfile -f helmfile.yaml.gotmpl apply

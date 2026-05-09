@@ -1,0 +1,92 @@
+{{- if .Values.enabled -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "kernel-lpe-mitigator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kernel-lpe-mitigator.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kernel-lpe-mitigator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kernel-lpe-mitigator.selectorLabels" . | nindent 8 }}
+    spec:
+      hostPID: true
+      priorityClassName: {{ .Values.priorityClassName }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      containers:
+        - name: mitigate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              ACTION="{{ .Values.action }}"
+              CONF_FILE="/host/etc/modprobe.d/disable-kernel-lpe.conf"
+              
+              # Determine modules based on configuration
+              MODULES=""
+              {{- if .Values.mitigation.copyFail }}
+              MODULES="$MODULES algif_aead"
+              {{- end }}
+              {{- if .Values.mitigation.dirtyFrag }}
+              MODULES="$MODULES esp4 esp6 rxrpc"
+              {{- end }}
+
+              if [ "$ACTION" = "remove" ]; then
+                echo "=== Removing Kernel LPE Mitigations ==="
+                if [ -f "$CONF_FILE" ]; then
+                  rm -f "$CONF_FILE"
+                  echo "Deleted $CONF_FILE"
+                  echo "Note: Modules may still be loaded. A reboot is recommended to fully restore state."
+                else
+                  echo "Mitigation file not found. Nothing to do."
+                fi
+              else
+                echo "=== Applying Kernel LPE Module Mitigation ==="
+                echo "Modules to block: $MODULES"
+
+                for mod in $MODULES; do
+                  # Check if already blocked in any conf file
+                  if ! grep -qs "install ${mod} /bin/false" /host/etc/modprobe.d/*.conf 2>/dev/null; then
+                    printf "install %s /bin/false\nblacklist %s\n" "$mod" "$mod" >> "$CONF_FILE"
+                    echo "Blocked ${mod} in $CONF_FILE"
+                  else
+                    echo "${mod} already blocked"
+                  fi
+
+                  # Attempt to unload if currently loaded
+                  if chroot /host grep -q "^${mod} " /proc/modules 2>/dev/null; then
+                    if chroot /host modprobe -r "$mod" 2>/dev/null; then
+                      echo "Unloaded ${mod}"
+                    else
+                      echo "WARNING: Could not unload ${mod} (in use). Reboot node to complete mitigation."
+                    fi
+                  fi
+                done
+              fi
+
+              echo "=== Process complete. Sleeping ==="
+              sleep infinity
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory
+{{- end -}}

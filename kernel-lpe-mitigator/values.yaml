@@ -1,0 +1,35 @@
+# Default values for kernel-lpe-mitigator.
+
+# enabled: true (default) - Deploys the DaemonSet.
+# Set to false to completely remove the DaemonSet from the cluster.
+enabled: true
+
+# action: apply (default) - Applies the security mitigations.
+# action: remove - Removes the mitigation configuration from the host nodes.
+action: apply
+
+mitigation:
+  # CVE-2026-31431 (algif_aead)
+  copyFail: true
+  # CVE-2026-43284 (esp4, esp6, rxrpc)
+  dirtyFrag: true
+
+image:
+  repository: mcr.microsoft.com/cbl-mariner/busybox
+  tag: "2.0"
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    memory: 32Mi
+
+priorityClassName: system-node-critical
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+tolerations:
+  - operator: Exists
